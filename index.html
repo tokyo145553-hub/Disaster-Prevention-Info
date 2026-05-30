@@ -2,196 +2,113 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TEB防災 総合情報システム</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TEB防災</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1220">
 
-<style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
-
-body{
-font-family:"Yu Gothic","Meiryo",sans-serif;
-background:#0f172a;
-color:#fff;
-}
-
-header{
-height:60px;
-background:#111827;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:24px;
-font-weight:bold;
-border-bottom:2px solid #1e293b;
-}
-
-#map{
-height:50vh;
-width:100%;
-}
-
-.container{
-padding:10px;
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-gap:10px;
-}
-
-.card{
-background:#1e293b;
-border-radius:12px;
-padding:12px;
-}
-
-.card h2{
-font-size:18px;
-margin-bottom:10px;
-padding-left:8px;
-border-left:5px solid #3b82f6;
-}
-
-.list{
-max-height:250px;
-overflow-y:auto;
-}
-
-.item{
-background:#334155;
-padding:8px;
-margin-bottom:6px;
-border-radius:6px;
-}
-
-footer{
-margin-top:10px;
-padding:15px;
-background:#111827;
-text-align:center;
-}
-</style>
 </head>
 <body>
 
-<header>
-TEB防災 総合情報システム
-</header>
+<div class="sidebar">
 
-<div id="map"></div>
+    <div class="logo">
+        TEB防災
+    </div>
 
-<div class="container">
+    <nav>
 
-<div class="card">
-<h2>緊急地震速報</h2>
-<div id="eew" class="list">
-<div class="item">現在発表されていません</div>
-</div>
-</div>
+        <a href="index.html" class="active">
+            🏠 ホーム
+        </a>
 
-<div class="card">
-<h2>地震情報</h2>
-<div id="earthquake" class="list">
-<div class="item">読み込み中...</div>
-</div>
-</div>
+        <a href="earthquake.html">
+            🌎 地震
+        </a>
 
-<div class="card">
-<h2>津波情報</h2>
-<div id="tsunami" class="list">
-<div class="item">現在発表されていません</div>
-</div>
-</div>
+        <a href="weather.html">
+            🌧 気象
+        </a>
 
-<div class="card">
-<h2>気象警報・注意報</h2>
-<div id="weather" class="list">
-<div class="item">読み込み中...</div>
-</div>
-</div>
+        <a href="tsunami.html">
+            🌊 津波
+        </a>
 
-<div class="card">
-<h2>台風情報</h2>
-<div id="typhoon" class="list">
-<div class="item">取得待機中</div>
-</div>
-</div>
+        <a href="typhoon.html">
+            🌀 台風
+        </a>
 
-<div class="card">
-<h2>火山情報</h2>
-<div id="volcano" class="list">
-<div class="item">取得待機中</div>
-</div>
-</div>
+        <a href="volcano.html">
+            🌋 火山
+        </a>
+
+    </nav>
 
 </div>
 
-<footer>
-© TEB防災
-</footer>
+<div class="main">
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <header>
 
-<script>
+        <div id="clock">
+            --:--:--
+        </div>
 
-const map = L.map("map").setView([36.2,138.2],5);
+        <button id="themeBtn">
+            🌙
+        </button>
 
-L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{
-attribution:"© OpenStreetMap contributors"
-}
-).addTo(map);
+    </header>
 
-async function loadEarthquake(){
+    <section class="home-grid">
 
-try{
+        <div class="home-card eew">
 
-const res = await fetch(
-"https://api.p2pquake.net/v2/history?codes=551&limit=20"
-);
+            <h2>緊急地震速報</h2>
 
-const data = await res.json();
+            <div id="homeEEW">
+                現在発表されていません
+            </div>
 
-const area = document.getElementById("earthquake");
+        </div>
 
-area.innerHTML = "";
+        <div class="home-card weather">
 
-data.forEach(eq=>{
+            <h2>警報・注意報</h2>
 
-const item = document.createElement("div");
+            <div id="homeWarning">
+                取得中...
+            </div>
 
-item.className = "item";
+        </div>
 
-item.innerHTML = `
-<b>${eq.earthquake.hypocenter.name}</b><br>
-M${eq.earthquake.magnitude}
- 深さ${eq.earthquake.depth}km<br>
-最大震度 ${eq.earthquake.maxScale}
-`;
+        <div class="home-card quake">
 
-area.appendChild(item);
+            <h2>最新地震</h2>
 
-});
+            <div id="homeQuake">
+                取得中...
+            </div>
 
-}catch(err){
+        </div>
 
-document.getElementById("earthquake").innerHTML =
-'<div class="item">取得失敗</div>';
+        <div class="home-card tsunami">
 
-}
+            <h2>津波情報</h2>
 
-}
+            <div id="homeTsunami">
+                現在発表されていません
+            </div>
 
-loadEarthquake();
+        </div>
 
-setInterval(loadEarthquake,60000);
+    </section>
 
-</script>
+</div>
+
+<script src="js/app.js"></script>
 
 </body>
 </html>
