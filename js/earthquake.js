@@ -6,7 +6,7 @@
 const P2P_URL =
 "https://api.p2pquake.net/v2/history?codes=551&limit=50";
 
-let quakeCache = [];
+let earthquakeCache = [];
 
 // ==========================================
 // 初期化
@@ -30,19 +30,26 @@ window.addEventListener(
 // 地震取得
 // ==========================================
 
-async function loadEarthquake() {
+async function loadEarthquake(){
 
-    try {
+    try{
 
         const res =
-            await fetch(P2P_URL);
+            await fetch(
+                P2P_URL
+            );
 
         const data =
             await res.json();
 
-        quakeCache = data;
+        earthquakeCache =
+            data;
 
-        renderEarthquake(
+        renderEarthquakeList(
+            data
+        );
+
+        renderHomeEarthquake(
             data
         );
 
@@ -51,7 +58,6 @@ async function loadEarthquake() {
     catch(err){
 
         console.error(
-            "地震情報取得失敗",
             err
         );
 
@@ -65,19 +71,20 @@ async function loadEarthquake() {
 }
 
 // ==========================================
-// 描画
+// 地震一覧
 // ==========================================
 
-function renderEarthquake(
+function renderEarthquakeList(
     data
-) {
+){
 
     const area =
         document.getElementById(
             "quakeList"
         );
 
-    if(!area) return;
+    if(!area)
+        return;
 
     area.innerHTML = "";
 
@@ -87,38 +94,39 @@ function renderEarthquake(
             eq.earthquake
             ?.hypocenter;
 
-        if(!hypo) return;
+        if(!hypo)
+            return;
 
-        const div =
+        const item =
             document.createElement(
                 "div"
             );
 
-        div.className =
+        item.className =
             "item";
 
-        const scale =
+        const intensity =
             convertScale(
                 eq.earthquake
                 .maxScale
             );
 
-        div.innerHTML = `
+        item.innerHTML = `
+            <b>
+            ${hypo.name}
+            </b>
+            <br>
+            最大震度:
+            ${intensity}
+            <br>
+            M:
+            ${eq.earthquake.magnitude}
+            <br>
+            深さ:
+            ${eq.earthquake.depth}km
+        `;
 
-<b>${hypo.name}</b><br>
-
-最大震度：
-${scale}<br>
-
-M：
-${eq.earthquake.magnitude}<br>
-
-深さ：
-${eq.earthquake.depth}km
-
-`;
-
-        div.addEventListener(
+        item.addEventListener(
             "click",
             ()=>{
 
@@ -130,10 +138,111 @@ ${eq.earthquake.depth}km
         );
 
         area.appendChild(
-            div
+            item
         );
 
     });
+
+}
+
+// ==========================================
+// ホーム表示
+// ==========================================
+
+function renderHomeEarthquake(
+    data
+){
+
+    const area =
+        document.getElementById(
+            "homeQuake"
+        );
+
+    if(!area)
+        return;
+
+    if(
+        data.length === 0
+    ){
+
+        area.textContent =
+        "地震情報なし";
+
+        return;
+
+    }
+
+    const eq =
+        data[0];
+
+    const hypo =
+        eq.earthquake
+        ?.hypocenter;
+
+    if(!hypo)
+        return;
+
+    area.innerHTML = `
+        <b>
+        ${hypo.name}
+        </b>
+        <br>
+        最大震度:
+        ${convertScale(
+            eq.earthquake.maxScale
+        )}
+        <br>
+        M:
+        ${eq.earthquake.magnitude}
+    `;
+
+}
+
+// ==========================================
+// 地図移動
+// ==========================================
+
+function jumpToEarthquake(
+    eq
+){
+
+    const hypo =
+        eq.earthquake
+        ?.hypocenter;
+
+    if(!hypo)
+        return;
+
+    if(
+        typeof moveToLocation
+        === "function"
+    ){
+
+        moveToLocation(
+            hypo.latitude,
+            hypo.longitude,
+            7
+        );
+
+    }
+
+    if(
+        typeof showEpicenter
+        === "function"
+    ){
+
+        showEpicenter(
+            hypo.latitude,
+            hypo.longitude,
+
+            `
+            ${hypo.name}
+            <br>
+            M${eq.earthquake.magnitude}
+            `
+        );
+
+    }
 
 }
 
@@ -170,80 +279,7 @@ function convertScale(
 }
 
 // ==========================================
-// 地図移動
-// ==========================================
-
-function jumpToEarthquake(
-    eq
-){
-
-    const hypo =
-        eq.earthquake
-        ?.hypocenter;
-
-    if(!hypo)
-        return;
-
-    const lat =
-        hypo.latitude;
-
-    const lon =
-        hypo.longitude;
-
-    if(
-        lat &&
-        lon &&
-        typeof moveToLocation
-        === "function"
-    ){
-
-        moveToLocation(
-            lat,
-            lon,
-            7
-        );
-
-    }
-
-    if(
-        typeof showEpicenter
-        === "function"
-    ){
-
-        showEpicenter(
-
-            lat,
-            lon,
-
-            `
-            ${hypo.name}<br>
-            M${eq.earthquake.magnitude}
-            `
-
-        );
-
-    }
-
-}
-
-// ==========================================
-// 最新地震
-// ==========================================
-
-function getLatestEarthquake(){
-
-    if(
-        quakeCache.length
-        === 0
-    )
-        return null;
-
-    return quakeCache[0];
-
-}
-
-// ==========================================
-// 最大震度色
+// 震度色
 // ==========================================
 
 function getIntensityColor(
@@ -253,10 +289,10 @@ function getIntensityColor(
     switch(scale){
 
         case 10:
-            return "#6ee7b7";
+            return "#60a5fa";
 
         case 20:
-            return "#34d399";
+            return "#38bdf8";
 
         case 30:
             return "#facc15";
@@ -287,42 +323,17 @@ function getIntensityColor(
 }
 
 // ==========================================
-// 地図震源一括表示
+// 最新地震
 // ==========================================
 
-function drawRecentEarthquakes(){
+function getLatestEarthquake(){
 
-    quakeCache.forEach(
-        eq=>{
+    if(
+        earthquakeCache.length
+        === 0
+    )
+        return null;
 
-            const hypo =
-                eq.earthquake
-                ?.hypocenter;
-
-            if(!hypo)
-                return;
-
-            if(
-                typeof showEpicenter
-                !== "function"
-            )
-                return;
-
-            showEpicenter(
-
-                hypo.latitude,
-
-                hypo.longitude,
-
-                `
-                ${hypo.name}
-                <br>
-                M${eq.earthquake.magnitude}
-                `
-
-            );
-
-        }
-    );
+    return earthquakeCache[0];
 
 }
