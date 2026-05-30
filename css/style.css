@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>TEB防災 総合情報システム</title>
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/map.css">
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+</head>
+<body>
+
+<header>
+
+<div class="logo">
+TEB防災
+</div>
+
+<div class="header-right">
+
+<div id="clock">
+--:--:--
+</div>
+
+<button id="themeBtn">
+🌙
+</button>
+
+</div>
+
+</header>
+
+<main>
+
+<section id="map-area">
+
+<div id="map"></div>
+
+</section>
+
+<section class="dashboard">
+
+<div class="panel eew">
+
+<h2>緊急地震速報</h2>
+
+<div id="eewList"></div>
+
+</div>
+
+<div class="panel quake">
+
+<h2>地震情報</h2>
+
+<div id="quakeList"></div>
+
+</div>
+
+<div class="panel tsunami">
+
+<h2>津波情報</h2>
+
+<div id="tsunamiList"></div>
+
+</div>
+
+<div class="panel weather">
+
+<h2>警報・注意報</h2>
+
+<div id="warningList"></div>
+
+</div>
+
+<div class="panel typhoon">
+
+<h2>台風情報</h2>
+
+<div id="typhoonList"></div>
+
+</div>
+
+<div class="panel volcano">
+
+<h2>火山情報</h2>
+
+<div id="volcanoList"></div>
+
+</div>
+
+</section>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+<script src="js/earthquake.js"></script>
+<script src="js/eew.js"></script>
+<script src="js/tsunami.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/typhoon.js"></script>
+<script src="js/volcano.js"></script>
+
+</body>
+</html>
