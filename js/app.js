@@ -1,69 +1,329 @@
 // ==========================================
-// TEB防災 共通処理
+// TEB防災
 // app.js
 // ==========================================
 
-// ダークモード
-const themeBtn = document.getElementById("themeBtn");
-
-themeBtn?.addEventListener("click", () => {
-
-    document.body.classList.toggle("dark");
-
-    const dark = document.body.classList.contains("dark");
-
-    localStorage.setItem("darkMode", dark);
-
-    themeBtn.textContent = dark ? "☀️" : "🌙";
-
-});
-
-// 起動時
-window.addEventListener("load", () => {
-
-    const darkMode =
-        localStorage.getItem("darkMode") === "true";
-
-    if (darkMode) {
-
-        document.body.classList.add("dark");
-
-        if (themeBtn)
-            themeBtn.textContent = "☀️";
-
-    }
-
-});
+console.log(
+    "TEB防災 起動"
+);
 
 // ==========================================
 // 時計
 // ==========================================
 
-function updateClock() {
+function updateClock(){
 
-    const now = new Date();
+    const now =
+        new Date();
 
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
+    const y =
+        now.getFullYear();
 
-    const h = String(now.getHours()).padStart(2, "0");
-    const min = String(now.getMinutes()).padStart(2, "0");
-    const sec = String(now.getSeconds()).padStart(2, "0");
+    const mo =
+        String(
+            now.getMonth()+1
+        ).padStart(2,"0");
 
-    const text =
-        `${y}/${m}/${d} ${h}:${min}:${sec}`;
+    const d =
+        String(
+            now.getDate()
+        ).padStart(2,"0");
 
-    const clock = document.getElementById("clock");
+    const h =
+        String(
+            now.getHours()
+        ).padStart(2,"0");
 
-    if (clock)
-        clock.textContent = text;
+    const mi =
+        String(
+            now.getMinutes()
+        ).padStart(2,"0");
+
+    const s =
+        String(
+            now.getSeconds()
+        ).padStart(2,"0");
+
+    const clock =
+        document.getElementById(
+            "clock"
+        );
+
+    if(!clock)
+        return;
+
+    clock.textContent =
+        `${y}/${mo}/${d} ${h}:${mi}:${s}`;
 
 }
 
 updateClock();
 
-setInterval(updateClock, 1000);
+setInterval(
+    updateClock,
+    1000
+);
+
+// ==========================================
+// ダークモード
+// ==========================================
+
+const themeBtn =
+document.getElementById(
+    "themeBtn"
+);
+
+function loadTheme(){
+
+    const saved =
+        localStorage.getItem(
+            "theme"
+        );
+
+    if(saved === "light"){
+
+        document.body.classList.add(
+            "light"
+        );
+
+        if(themeBtn)
+            themeBtn.textContent =
+            "☀️";
+
+    }
+
+}
+
+function toggleTheme(){
+
+    document.body.classList.toggle(
+        "light"
+    );
+
+    const light =
+        document.body.classList.contains(
+            "light"
+        );
+
+    localStorage.setItem(
+        "theme",
+        light
+        ? "light"
+        : "dark"
+    );
+
+    if(themeBtn){
+
+        themeBtn.textContent =
+        light
+        ? "☀️"
+        : "🌙";
+
+    }
+
+}
+
+themeBtn?.addEventListener(
+    "click",
+    toggleTheme
+);
+
+loadTheme();
+
+// ==========================================
+// ナビ現在地
+// ==========================================
+
+function activateNav(){
+
+    const current =
+        location.pathname
+        .split("/")
+        .pop();
+
+    document
+    .querySelectorAll(
+        ".sidebar nav a"
+    )
+    .forEach(link=>{
+
+        const href =
+            link.getAttribute(
+                "href"
+            );
+
+        if(
+            href === current
+        ){
+
+            link.classList.add(
+                "active"
+            );
+
+        }
+
+    });
+
+}
+
+activateNav();
+
+// ==========================================
+// 通知
+// ==========================================
+
+async function initNotification(){
+
+    if(
+        !(
+            "Notification"
+            in window
+        )
+    )
+        return;
+
+    if(
+        Notification.permission
+        === "default"
+    ){
+
+        try{
+
+            await Notification
+            .requestPermission();
+
+        }
+        catch(err){
+
+            console.error(err);
+
+        }
+
+    }
+
+}
+
+initNotification();
+
+// ==========================================
+// 通知表示
+// ==========================================
+
+function showNotification(
+    title,
+    body
+){
+
+    if(
+        !(
+            "Notification"
+            in window
+        )
+    )
+        return;
+
+    if(
+        Notification.permission
+        !== "granted"
+    )
+        return;
+
+    new Notification(
+        title,
+        {
+            body,
+            icon:
+            "assets/logo.png"
+        }
+    );
+
+}
+
+// ==========================================
+// Service Worker
+// ==========================================
+
+if(
+    "serviceWorker"
+    in navigator
+){
+
+    window.addEventListener(
+        "load",
+        ()=>{
+
+            navigator
+            .serviceWorker
+            .register(
+                "./service-worker.js"
+            )
+            .then(()=>{
+
+                console.log(
+                    "Service Worker 登録成功"
+                );
+
+            })
+            .catch(err=>{
+
+                console.error(
+                    err
+                );
+
+            });
+
+        }
+    );
+
+}
+
+// ==========================================
+// 共通UI
+// ==========================================
+
+function setLoading(
+    id,
+    text="読み込み中..."
+){
+
+    const el =
+        document.getElementById(
+            id
+        );
+
+    if(!el)
+        return;
+
+    el.innerHTML =
+    `
+    <div class="loading">
+        ${text}
+    </div>
+    `;
+
+}
+
+function setError(
+    id,
+    text="取得失敗"
+){
+
+    const el =
+        document.getElementById(
+            id
+        );
+
+    if(!el)
+        return;
+
+    el.innerHTML =
+    `
+    <div class="error">
+        ${text}
+    </div>
+    `;
+
+}
 
 // ==========================================
 // 共通更新時刻
@@ -71,116 +331,17 @@ setInterval(updateClock, 1000);
 
 let lastUpdate = null;
 
-function setLastUpdate() {
+function setLastUpdate(){
 
-    lastUpdate = new Date();
+    lastUpdate =
+        new Date();
 
     console.log(
-        "[更新]",
-        lastUpdate.toLocaleString("ja-JP")
+        "更新:",
+        lastUpdate
+        .toLocaleString(
+            "ja-JP"
+        )
     );
 
 }
-
-// ==========================================
-// 共通通知
-// ==========================================
-
-function showNotification(title, body) {
-
-    if (!("Notification" in window))
-        return;
-
-    if (Notification.permission === "granted") {
-
-        new Notification(title, {
-            body: body,
-            icon: "assets/logo.png"
-        });
-
-    }
-
-}
-
-async function requestNotificationPermission() {
-
-    if (!("Notification" in window))
-        return;
-
-    if (Notification.permission === "default") {
-
-        await Notification.requestPermission();
-
-    }
-
-}
-
-requestNotificationPermission();
-
-// ==========================================
-// Service Worker登録
-// ==========================================
-
-if ("serviceWorker" in navigator) {
-
-    window.addEventListener("load", () => {
-
-        navigator.serviceWorker
-            .register("./service-worker.js")
-            .then(() => {
-
-                console.log(
-                    "Service Worker 登録成功"
-                );
-
-            })
-            .catch(err => {
-
-                console.error(
-                    "Service Worker 登録失敗",
-                    err
-                );
-
-            });
-
-    });
-
-}
-
-// ==========================================
-// ローディング表示
-// ==========================================
-
-function setLoading(id, text = "読み込み中...") {
-
-    const el = document.getElementById(id);
-
-    if (!el) return;
-
-    el.innerHTML =
-        `<div class="loading">${text}</div>`;
-
-}
-
-// ==========================================
-// エラー表示
-// ==========================================
-
-function setError(id, text = "取得失敗") {
-
-    const el = document.getElementById(id);
-
-    if (!el) return;
-
-    el.innerHTML =
-        `<div class="error">${text}</div>`;
-
-}
-
-// ==========================================
-// 起動ログ
-// ==========================================
-
-console.log(
-    "TEB防災 総合情報システム 起動"
-);
