@@ -4,7 +4,11 @@
 // ==========================================
 
 let map;
-let prefectureLayer;
+
+let prefectureLayer = null;
+
+let earthquakeMarkers = [];
+let eewMarkers = [];
 
 const JAPAN_CENTER = [
     36.2048,
@@ -15,16 +19,32 @@ const JAPAN_CENTER = [
 // 初期化
 // ==========================================
 
-function initMap() {
+window.addEventListener(
+    "load",
+    initMap
+);
 
-    map = L.map("map", {
+function initMap(){
 
-        zoomControl: true,
-        attributionControl: true
+    const mapElement =
+        document.getElementById(
+            "map"
+        );
 
-    });
+    if(!mapElement)
+        return;
 
-    map.setView(JAPAN_CENTER, 5);
+    map = L.map(
+        "map",
+        {
+            zoomControl:true
+        }
+    );
+
+    map.setView(
+        JAPAN_CENTER,
+        5
+    );
 
     createBaseMap();
 
@@ -33,55 +53,56 @@ function initMap() {
 }
 
 // ==========================================
-// 背景地図
+// ベースマップ
 // ==========================================
 
-function createBaseMap() {
+function createBaseMap(){
 
     L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         {
-            maxZoom: 18,
             attribution:
-            "&copy; OpenStreetMap contributors"
+            "&copy; OpenStreetMap & CARTO",
+            maxZoom:19
         }
     ).addTo(map);
 
 }
 
 // ==========================================
-// GeoJSON読込
+// 都道府県境界
 // ==========================================
 
-async function loadPrefectureGeoJSON() {
+async function loadPrefectureGeoJSON(){
 
-    try {
+    try{
 
-        const response =
+        const res =
             await fetch(
                 "./data/prefectures.geojson"
             );
 
         const geojson =
-            await response.json();
+            await res.json();
 
         prefectureLayer =
             L.geoJSON(
                 geojson,
                 {
-                    style: prefectureStyle,
+                    style:
+                    prefectureStyle,
                     onEachFeature:
-                        onEachPrefecture
+                    onEachPrefecture
                 }
             );
 
-        prefectureLayer.addTo(map);
-
-        console.log(
-            "都道府県境界読込完了"
+        prefectureLayer.addTo(
+            map
         );
 
-    } catch (err) {
+    }
+
+    catch(err){
 
         console.error(
             "GeoJSON読込失敗",
@@ -96,30 +117,30 @@ async function loadPrefectureGeoJSON() {
 // スタイル
 // ==========================================
 
-function prefectureStyle() {
+function prefectureStyle(){
 
     return {
 
-        color: "#94a3b8",
+        color:"#64748b",
 
-        weight: 1,
+        weight:1,
 
-        fillColor: "#334155",
+        fillColor:"#1e293b",
 
-        fillOpacity: 0.6
+        fillOpacity:0.4
 
     };
 
 }
 
 // ==========================================
-// 各都道府県
+// イベント
 // ==========================================
 
 function onEachPrefecture(
     feature,
     layer
-) {
+){
 
     const name =
         feature.properties.name ||
@@ -127,26 +148,28 @@ function onEachPrefecture(
 
     layer.on({
 
-        mouseover: e => {
+        mouseover:e=>{
 
             e.target.setStyle({
 
-                weight: 2,
-                fillOpacity: 0.9
+                weight:2,
+
+                fillOpacity:0.8
 
             });
 
         },
 
-        mouseout: e => {
+        mouseout:e=>{
 
-            prefectureLayer.resetStyle(
+            prefectureLayer
+            ?.resetStyle(
                 e.target
             );
 
         },
 
-        click: () => {
+        click:()=>{
 
             showPrefectureInfo(
                 name
@@ -159,27 +182,27 @@ function onEachPrefecture(
 }
 
 // ==========================================
-// 情報表示
+// 都道府県情報
 // ==========================================
 
 function showPrefectureInfo(
     prefecture
-) {
+){
 
-    L.popup()
+    const detail =
+        document.getElementById(
+            "detail"
+        );
 
-    .setLatLng(
-        map.getCenter()
-    )
+    if(detail){
 
-    .setContent(
-        `
-        <b>${prefecture}</b><br>
-        詳細情報取得準備中
-        `
-    )
+        detail.innerHTML = `
+        <h3>
+        ${prefecture}
+        </h3>
+        `;
 
-    .openOn(map);
+    }
 
 }
 
@@ -190,67 +213,133 @@ function showPrefectureInfo(
 function moveToLocation(
     lat,
     lon,
-    zoom = 8
-) {
+    zoom=7
+){
+
+    if(!map)
+        return;
 
     map.flyTo(
-        [lat, lon],
+        [lat,lon],
         zoom,
         {
-            duration: 1
+            duration:1
         }
     );
 
 }
 
 // ==========================================
-// 震源表示
+// 地震マーカー
 // ==========================================
 
 function showEpicenter(
     lat,
     lon,
     title
-) {
+){
+
+    if(!map)
+        return;
 
     const marker =
-        L.marker(
-            [lat, lon]
+        L.circleMarker(
+            [lat,lon],
+            {
+                radius:8,
+
+                color:"#f59e0b",
+
+                fillColor:"#f59e0b",
+
+                fillOpacity:0.8
+            }
         );
 
     marker
         .addTo(map)
-        .bindPopup(title);
+        .bindPopup(
+            title
+        );
+
+    earthquakeMarkers.push(
+        marker
+    );
 
 }
 
 // ==========================================
-// EEW震源表示
+// EEWマーカー
 // ==========================================
 
 function showEEWEpicenter(
     lat,
     lon,
     title
-) {
+){
+
+    if(!map)
+        return;
 
     const marker =
         L.circleMarker(
-            [lat, lon],
+            [lat,lon],
             {
-                radius: 12,
+                radius:12,
 
-                color: "#ff0000",
+                color:"#ff0000",
 
-                fillColor: "#ff0000",
+                fillColor:"#ff0000",
 
-                fillOpacity: 0.8
+                fillOpacity:1
             }
         );
 
     marker
         .addTo(map)
-        .bindPopup(title);
+        .bindPopup(
+            title
+        );
+
+    eewMarkers.push(
+        marker
+    );
+
+}
+
+// ==========================================
+// マーカー削除
+// ==========================================
+
+function clearEarthquakeMarkers(){
+
+    earthquakeMarkers.forEach(
+        marker=>{
+
+            map.removeLayer(
+                marker
+            );
+
+        }
+    );
+
+    earthquakeMarkers = [];
+
+}
+
+function clearEEWMarkers(){
+
+    eewMarkers.forEach(
+        marker=>{
+
+            map.removeLayer(
+                marker
+            );
+
+        }
+    );
+
+    eewMarkers = [];
 
 }
 
@@ -261,22 +350,33 @@ function showEEWEpicenter(
 function updatePrefectureColor(
     prefectureName,
     color
-) {
+){
+
+    if(
+        !prefectureLayer
+    )
+        return;
 
     prefectureLayer.eachLayer(
-        layer => {
+        layer=>{
 
-            if (
-                layer.feature
-                .properties
-                .name ===
+            const name =
+            layer.feature
+            ?.properties
+            ?.name;
+
+            if(
+                name ===
                 prefectureName
-            ) {
+            ){
 
                 layer.setStyle({
 
                     fillColor:
-                        color
+                    color,
+
+                    fillOpacity:
+                    0.8
 
                 });
 
@@ -288,10 +388,46 @@ function updatePrefectureColor(
 }
 
 // ==========================================
-// 初期化
+// 色リセット
 // ==========================================
 
-window.addEventListener(
-    "load",
-    initMap
-);
+function resetPrefectureColors(){
+
+    if(
+        !prefectureLayer
+    )
+        return;
+
+    prefectureLayer.eachLayer(
+        layer=>{
+
+            layer.setStyle({
+
+                fillColor:
+                "#1e293b",
+
+                fillOpacity:
+                0.4
+
+            });
+
+        }
+    );
+
+}
+
+// ==========================================
+// 全国表示
+// ==========================================
+
+function zoomJapan(){
+
+    if(!map)
+        return;
+
+    map.setView(
+        JAPAN_CENTER,
+        5
+    );
+
+}
