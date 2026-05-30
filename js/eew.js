@@ -1,10 +1,14 @@
 // ==========================================
 // TEB防災
 // eew.js
+// Wolfx JMA EEW
 // ==========================================
 
-let eewData = null;
+const WOLFX_EEW_WS =
+"wss://ws-api.wolfx.jp/jma_eew";
+
 let eewSocket = null;
+let currentEEW = null;
 
 // ==========================================
 // 初期化
@@ -12,7 +16,7 @@ let eewSocket = null;
 
 window.addEventListener(
     "load",
-    () => {
+    ()=>{
 
         connectEEW();
 
@@ -20,50 +24,63 @@ window.addEventListener(
 );
 
 // ==========================================
-// WebSocket接続
+// 接続
 // ==========================================
 
-function connectEEW() {
+function connectEEW(){
 
-    try {
+    try{
 
-        // 実際のURLは配信元仕様に合わせる
-        eewSocket = new WebSocket(
-            "wss://example-eew-server"
+        eewSocket =
+        new WebSocket(
+            WOLFX_EEW_WS
         );
 
-        eewSocket.onopen = () => {
+        eewSocket.onopen =
+        ()=>{
 
             console.log(
                 "EEW接続成功"
             );
 
+            try{
+
+                eewSocket.send(
+                    "query_jmaeew"
+                );
+
+            }
+            catch(err){}
+
         };
 
-        eewSocket.onmessage = event => {
+        eewSocket.onmessage =
+        event=>{
 
-            try {
+            try{
 
                 const data =
-                    JSON.parse(
-                        event.data
-                    );
+                JSON.parse(
+                    event.data
+                );
 
                 handleEEW(
                     data
                 );
 
             }
-
             catch(err){
 
-                console.error(err);
+                console.error(
+                    err
+                );
 
             }
 
         };
 
-        eewSocket.onclose = () => {
+        eewSocket.onclose =
+        ()=>{
 
             console.log(
                 "EEW切断"
@@ -77,93 +94,183 @@ function connectEEW() {
         };
 
         eewSocket.onerror =
-            console.error;
+        err=>{
+
+            console.error(
+                err
+            );
+
+        };
 
     }
-
     catch(err){
 
-        console.error(err);
+        console.error(
+            err
+        );
 
     }
 
 }
 
 // ==========================================
-// EEW受信
+// EEW処理
 // ==========================================
 
 function handleEEW(
     data
 ){
 
-    eewData = data;
+    if(
+        data.type ===
+        "heartbeat"
+    ){
 
-    renderEEW();
+        try{
 
-    drawEEW();
+            eewSocket.send(
+                "ping"
+            );
 
-}
-
-// ==========================================
-// パネル描画
-// ==========================================
-
-function renderEEW(){
-
-    const area =
-        document.getElementById(
-            "eewList"
-        );
-
-    if(!area)
-        return;
-
-    if(!eewData){
-
-        area.innerHTML = `
-        <div class="item">
-        現在発表なし
-        </div>
-        `;
+        }
+        catch(err){}
 
         return;
 
     }
 
-    const hypo =
-        eewData.hypocenter ||
-        {};
+    if(
+        data.type !==
+        "jma_eew"
+    )
+        return;
 
-    area.innerHTML = `
+    if(
+        data.isTraining
+    )
+        return;
 
-<div class="item">
+    currentEEW = data;
+
+    renderEEW();
+
+    drawEEW();
+
+    notifyEEW();
+
+}
+
+// ==========================================
+// 描画
+// ==========================================
+
+function renderEEW(){
+
+    const page =
+    document.getElementById(
+        "eewList"
+    );
+
+    const home =
+    document.getElementById(
+        "homeEEW"
+    );
+
+    const html =
+    buildEEWHTML();
+
+    if(page)
+        page.innerHTML =
+        html;
+
+    if(home)
+        home.innerHTML =
+        html;
+
+}
+
+// ==========================================
+// HTML生成
+// ==========================================
+
+function buildEEWHTML(){
+
+    if(!currentEEW){
+
+        return `
+        <div class="item">
+        現在発表されていません
+        </div>
+        `;
+
+    }
+
+    if(
+        currentEEW.isCancel
+    ){
+
+        return `
+        <div class="item">
+        緊急地震速報は
+        取消されました
+        </div>
+        `;
+
+    }
+
+    const color =
+    getEEWColor(
+        currentEEW
+        .MaxIntensity
+    );
+
+    return `
+
+<div
+class="item"
+style="
+border-left:
+6px solid ${color};
+"
+>
 
 <b>
-緊急地震速報
+
+${currentEEW.Title}
+
 </b>
 
 <br>
 
-震源：
-${hypo.name || "-"}
-
-<br>
-
-M：
-${eewData.magnitude || "-"}
-
-<br>
-
-深さ：
-${eewData.depth || "-"}
-
-km
+震源地：
+${currentEEW.Hypocenter}
 
 <br>
 
 最大予想震度：
-${eewData.maxIntensity || "-"}
+${currentEEW.MaxIntensity}
+
+<br>
+
+M：
+${currentEEW.Magunitude}
+
+<br>
+
+深さ：
+${currentEEW.Depth}km
+
+<br>
+
+第
+${currentEEW.Serial}
+報
+
+${
+currentEEW.isFinal
+? "<br>最終報"
+: ""
+}
 
 </div>
 
@@ -178,30 +285,29 @@ ${eewData.maxIntensity || "-"}
 function drawEEW(){
 
     if(
-        !eewData ||
+        !currentEEW
+    )
+        return;
+
+    if(
         typeof showEEWEpicenter
         !== "function"
     )
         return;
 
-    const hypo =
-        eewData.hypocenter;
-
-    if(!hypo)
-        return;
-
     showEEWEpicenter(
 
-        hypo.latitude,
+        currentEEW.Latitude,
 
-        hypo.longitude,
+        currentEEW.Longitude,
 
         `
-        EEW
+        ${currentEEW.Hypocenter}
         <br>
-        ${hypo.name}
+        M${currentEEW.Magunitude}
         <br>
-        M${eewData.magnitude}
+        最大震度
+        ${currentEEW.MaxIntensity}
         `
 
     );
@@ -209,19 +315,36 @@ function drawEEW(){
 }
 
 // ==========================================
-// 解除
+// 通知
 // ==========================================
 
-function clearEEW(){
+function notifyEEW(){
 
-    eewData = null;
+    if(
+        !currentEEW
+    )
+        return;
 
-    renderEEW();
+    if(
+        typeof showNotification
+        !== "function"
+    )
+        return;
+
+    showNotification(
+
+        "緊急地震速報",
+
+        `${currentEEW.Hypocenter}
+最大震度
+${currentEEW.MaxIntensity}`
+
+    );
 
 }
 
 // ==========================================
-// 最大予想震度色
+// 色
 // ==========================================
 
 function getEEWColor(
@@ -229,14 +352,16 @@ function getEEWColor(
 ){
 
     switch(
-        String(intensity)
+        String(
+            intensity
+        )
     ){
 
         case "1":
-            return "#6ee7b7";
+            return "#60a5fa";
 
         case "2":
-            return "#34d399";
+            return "#38bdf8";
 
         case "3":
             return "#facc15";
@@ -260,32 +385,18 @@ function getEEWColor(
             return "#7f1d1d";
 
         default:
-            return "#475569";
+            return "#64748b";
 
     }
 
 }
 
 // ==========================================
-// 受信時通知
+// 取得中EEW
 // ==========================================
 
-function notifyEEW(){
+function getCurrentEEW(){
 
-    if(
-        !eewData ||
-        typeof showNotification
-        !== "function"
-    )
-        return;
-
-    showNotification(
-
-        "緊急地震速報",
-
-        `${eewData.hypocenter?.name || ""}
- 最大予想震度 ${eewData.maxIntensity || "-"}`
-
-    );
+    return currentEEW;
 
 }
